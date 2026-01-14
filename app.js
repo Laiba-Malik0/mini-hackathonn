@@ -1,10 +1,19 @@
-// Firebase Imports
+// ==================== Firebase Imports ====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+import { 
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, 
+  GoogleAuthProvider, signInWithPopup, onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { 
+  getFirestore, collection, addDoc, getDocs, query, orderBy,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp 
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-// Firebase Config
+// ==================== Cloudinary ====================
+const CLOUDINARY_CLOUD_NAME = "dvur3cxrj"; 
+const CLOUDINARY_UPLOAD_PRESET = "blog_upload"; 
+
+// ==================== Firebase Config ====================
 const firebaseConfig = {
   apiKey: "AIzaSyBpYiq6H2Jjb58igvMXY9a_n_kBsvrgfDY",
   authDomain: "mini-hackhathon-17cf6.firebaseapp.com",
@@ -14,13 +23,13 @@ const firebaseConfig = {
   appId: "1:1012091970008:web:e63e22276db8c81dea12ad"
 };
 
+// ==================== Initialize Firebase ====================
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
-// --- DOM Elements ---
+// ==================== DOM Elements ====================
 const authSection = document.getElementById("auth-section");
 const dashboard = document.getElementById("dashboard");
 const blogDetails = document.getElementById("blog-details");
@@ -28,7 +37,6 @@ const addEditBlog = document.getElementById("add-edit-blog");
 
 const authForm = document.getElementById("auth-form");
 const toggleLink = document.getElementById("toggle-link");
-const googleLogin = document.getElementById("google-login");
 const logoutBtn = document.getElementById("logout");
 const addBlogBtn = document.getElementById("add-blog");
 
@@ -41,101 +49,124 @@ const coverImage = document.getElementById("cover-image");
 
 const blogContent = document.getElementById("blog-content");
 const backToListBtn = document.getElementById("back-to-list");
-const likeBtn = document.getElementById("like-btn");
-const bookmarkBtn = document.getElementById("bookmark-btn");
 const editBlogBtn = document.getElementById("edit-blog");
 const deleteBlogBtn = document.getElementById("delete-blog");
 
 const searchInput = document.getElementById("search");
 const categoryFilter = document.getElementById("category-filter");
 
-// --- State ---
+// ==================== State ====================
 let currentUser = null;
 let currentBlogId = null;
 let isSignup = false;
 let editingBlog = false;
-let bookmarks = [];
 
-// --- Auth State ---
+// ==================== Auth State ====================
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if(user){
     authSection.style.display="none";
     dashboard.style.display="block";
-    await loadBookmarks();
     await loadBlogs();
   } else{
-    authSection.style.display="block";
+    authSection.style.display="flex";
     dashboard.style.display="none";
     blogDetails.style.display="none";
     addEditBlog.style.display="none";
   }
 });
 
-// --- Toggle Login/Signup ---
-toggleLink.addEventListener("click",(e)=>{e.preventDefault();
+// ==================== Toggle Login/Signup ====================
+toggleLink.addEventListener("click", (e) => {
+  e.preventDefault();
   isSignup = !isSignup;
-  document.getElementById("auth-title").textContent = isSignup ? "Join BlogSphere" : "Welcome Back";
+  document.getElementById("auth-title").textContent = isSignup ? "Join BlogMart" : "Welcome Back";
   document.getElementById("auth-btn").textContent = isSignup ? "Sign Up" : "Login";
   document.getElementById("name").style.display = isSignup ? "block" : "none";
 });
 
-// --- Auth Form ---
-authForm.addEventListener("submit",async (e)=>{
+// ==================== Auth Form ====================
+authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const name = document.getElementById("name").value;
-  try{
+
+  try {
     if(isSignup){
       const userCredential = await createUserWithEmailAndPassword(auth,email,password);
-      await setDoc(doc(db,"users",userCredential.user.uid),{ name, email, bookmarks:[], createdAt:Timestamp.now() });
-      Swal.fire({icon:'success', title:'Account created!', timer:1500, showConfirmButton:false});
-      isSignup = false; authForm.reset();
-    } else {
+      await setDoc(doc(db,"users",userCredential.user.uid), {
+        name,
+        email,
+        createdAt: Timestamp.now()
+      });
+      Swal.fire({ icon: 'success', title: 'Account created!', timer:1500, showConfirmButton:false });
+      isSignup = false;
+      authForm.reset();
+    } else{
       await signInWithEmailAndPassword(auth,email,password);
-      Swal.fire({icon:'success', title:'Login Successful!', timer:1500, showConfirmButton:false});
+      Swal.fire({ icon: 'success', title: 'Login Successful!', timer:1500, showConfirmButton:false });
     }
-  }catch(err){ Swal.fire({icon:'error', title:'Error', text:err.message}); }
+  } catch(err){
+    Swal.fire({ icon:'error', title:'Error', text: err.message });
+  }
 });
 
-// --- Google Login ---
-googleLogin.addEventListener("click",async()=>{ try{ await signInWithPopup(auth,googleProvider); }catch(err){ Swal.fire({icon:'error',title:'Error',text:err.message}); } });
+// ==================== Logout ====================
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+  Swal.fire({ icon:'success', title:'Logged out', timer:1000, showConfirmButton:false });
+});
 
-// --- Logout ---
-logoutBtn.addEventListener("click", async()=>{ await signOut(auth); Swal.fire({icon:'success',title:'Logged out',timer:1000,showConfirmButton:false}); });
+// ==================== Add Blog ====================
+addBlogBtn.addEventListener("click", () => {
+  editingBlog = false;
+  addEditBlog.style.display="block";
+  dashboard.style.display="none";
+  blogForm.reset();
+});
 
-// --- Upload Image to Firebase Storage ---
+// ==================== Back to Dashboard ====================
+backToListBtn.addEventListener("click", () => {
+  blogDetails.style.display="none";
+  dashboard.style.display="block";
+  loadBlogs();
+});
+
+// ==================== Upload Image ====================
 async function uploadImage(file){
   if(!file) return "";
-  const storageRef = ref(storage, `blog_images/${Date.now()}_${file.name}`);
-  await uploadBytes(storageRef,file);
-  const url = await getDownloadURL(storageRef);
-  return url;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: formData });
+  const data = await res.json();
+  // Resize image for faster loading
+  return data.secure_url + "?w=600&h=300&fit=crop";
 }
 
-// --- Blog Form ---
-blogForm.addEventListener("submit", async(e)=>{
+// ==================== Blog Form Submit ====================
+blogForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const title = blogTitle.value.trim();
   const content = blogText.value.trim();
   const category = blogCategory.value;
-  const imageFile = coverImage.files[0];
+  const file = coverImage.files[0];
 
-  if(!title||!content||!category) return Swal.fire({icon:'error',title:'Error',text:'Please fill all fields.'});
-  let imageURL = imageFile ? await uploadImage(imageFile) : "";
+  if(!title || !content || !category) return Swal.fire({ icon:'error', title:'Error', text:'Fill all fields' });
+
+  let imageURL = file ? await uploadImage(file) : "";
 
   if(editingBlog){
     const snap = await getDoc(doc(db,"blogs",currentBlogId));
-    const oldLikes = snap.exists()?snap.data().likes:{count:0,users:[]};
     const oldImage = snap.exists()?snap.data().coverImage:"";
     imageURL = imageURL || oldImage;
-    await updateDoc(doc(db,"blogs",currentBlogId),{ title, content, category, coverImage:imageURL, likes: oldLikes });
-    Swal.fire({icon:'success',title:'Blog Updated!',timer:1500,showConfirmButton:false});
-  } else {
-    const blogData = { title, content, category, coverImage:imageURL, author:currentUser.email, authorId:currentUser.uid, likes:{count:0,users:[]}, date:Timestamp.now() };
+    await updateDoc(doc(db,"blogs",currentBlogId), { title, content, category, coverImage:imageURL });
+    Swal.fire({ icon:'success', title:'Blog Updated!', timer:1500, showConfirmButton:false });
+  } else{
+    const blogData = { title, content, category, coverImage:imageURL, author:currentUser.email, authorId:currentUser.uid, date:Timestamp.now() };
     await addDoc(collection(db,"blogs"), blogData);
-    Swal.fire({icon:'success',title:'Blog Published!',timer:1500,showConfirmButton:false});
+    Swal.fire({ icon:'success', title:'Blog Published!', timer:1500, showConfirmButton:false });
   }
 
   blogForm.reset();
@@ -145,136 +176,111 @@ blogForm.addEventListener("submit", async(e)=>{
   loadBlogs();
 });
 
-// --- Load Blogs ---
+// ==================== Load Blogs (Optimized) ====================
 async function loadBlogs(){
-  blogList.innerHTML=`<div class="d-flex justify-content-center my-5"><div class="spinner-border text-primary"></div></div>`;
-  const q = query(collection(db,"blogs"),orderBy("date","desc"));
+  blogList.innerHTML = `<div class="d-flex justify-content-center my-5">Loading blogs...</div>`;
+
+  const q = query(collection(db,"blogs"), orderBy("date","desc"));
   const snap = await getDocs(q);
   let blogs = [];
-  snap.forEach(docSnap=>blogs.push({id:docSnap.id,...docSnap.data()}));
+  snap.forEach(docSnap => blogs.push({ id:docSnap.id, ...docSnap.data() }));
 
-  blogs = blogs.filter(blog=>{
-    const matchSearch = blog.title.toLowerCase().includes(searchInput.value.toLowerCase()) || blog.content.toLowerCase().includes(searchInput.value.toLowerCase());
-    const matchCat = categoryFilter.value===""||blog.category===categoryFilter.value;
-    return matchSearch&&matchCat;
+  // Filter by search & category
+  blogs = blogs.filter(blog => {
+    const searchMatch = blog.title.toLowerCase().includes(searchInput.value.toLowerCase()) || blog.content.toLowerCase().includes(searchInput.value.toLowerCase());
+    const catMatch = !categoryFilter.value || blog.category === categoryFilter.value;
+    return searchMatch && catMatch;
   });
 
-  if(blogs.length===0){ blogList.innerHTML="<p class='text-center my-5'>No blogs found</p>"; return; }
+  blogList.innerHTML = "";
+  if(blogs.length===0){ 
+    blogList.innerHTML="<p class='text-center my-5'>No blogs found</p>"; 
+    return; 
+  }
 
-  blogList.innerHTML="";
-  blogs.forEach(blog=>{
-    const isBookmarked = bookmarks.includes(blog.id);
-    blogList.innerHTML+=`
-      <div class="blog-card">
-        <img src="${blog.coverImage||'https://via.placeholder.com/600x300'}" alt="cover">
-        <h3>${blog.title}</h3>
-        <p>${blog.content.substring(0,100)}...</p>
-        <button onclick="viewBlog('${blog.id}')">Read More</button>
-        <button onclick="toggleBookmark('${blog.id}')">${isBookmarked?'Bookmarked':'Bookmark'}</button>
-      </div>
-    `;
+  // Append blogs using createElement (faster than innerHTML +=)
+  blogs.forEach(blog => {
+    const card = document.createElement("div");
+    card.className = "blog-card";
+
+    const img = document.createElement("img");
+    img.src = blog.coverImage || 'https://via.placeholder.com/600x300';
+    img.alt = "cover";
+    img.loading = "lazy";
+
+    const title = document.createElement("h3");
+    title.textContent = blog.title;
+
+    const p = document.createElement("p");
+    p.textContent = blog.content.substring(0, 100) + '...';
+
+    const btn = document.createElement("button");
+    btn.textContent = "Read More";
+    btn.onclick = () => viewBlog(blog.id);
+
+    card.append(img, title, p, btn);
+    blogList.appendChild(card);
   });
 }
 
-// --- View Single Blog ---
-window.viewBlog=async id=>{
+searchInput.addEventListener("input", loadBlogs);
+categoryFilter.addEventListener("change", loadBlogs);
+
+// ==================== View Blog ====================
+window.viewBlog = async (id) => {
   const snap = await getDoc(doc(db,"blogs",id));
   if(!snap.exists()) return;
-  const blog=snap.data(); currentBlogId=id;
-  blogContent.innerHTML=`
+  const blog = snap.data();
+  currentBlogId = id;
+
+  blogContent.innerHTML = `
     <h2>${blog.title}</h2>
     <p>✍️ ${blog.author}</p>
     <img src="${blog.coverImage}" class="img-fluid mb-3">
     <p>${blog.content}</p>
-    <p>❤️ ${blog.likes.count}</p>
   `;
-  if(currentUser.uid===blog.authorId){ editBlogBtn.style.display="inline-block"; deleteBlogBtn.style.display="inline-block"; }
-  else{ editBlogBtn.style.display="none"; deleteBlogBtn.style.display="none"; }
-  dashboard.style.display="none"; blogDetails.style.display="block";
+
+  if(currentUser.uid === blog.authorId){
+    editBlogBtn.style.display="inline-block";
+    deleteBlogBtn.style.display="inline-block";
+  } else{
+    editBlogBtn.style.display="none";
+    deleteBlogBtn.style.display="none";
+  }
+
+  dashboard.style.display="none";
+  blogDetails.style.display="block";
 };
 
-// --- Likes, Bookmarks, Edit/Delete, Menu toggle ---
-// (Same as previous logic, minor changes for uniqueness, handled in the full JS code)
-
-
-
-// --- Load Bookmarks ---
-async function loadBookmarks(){
-  const userSnap = await getDoc(doc(db,"users",currentUser.uid));
-  if(userSnap.exists()) bookmarks = userSnap.data().bookmarks || [];
-}
-
-// --- Toggle Bookmark ---
-window.toggleBookmark = async (id) => {
-  if(bookmarks.includes(id)){
-    bookmarks = bookmarks.filter(bid => bid !== id);
-    Swal.fire({icon:'success',title:'Removed from bookmarks',timer:1000,showConfirmButton:false});
-  } else {
-    bookmarks.push(id);
-    Swal.fire({icon:'success',title:'Added to bookmarks',timer:1000,showConfirmButton:false});
-  }
-  await setDoc(doc(db,"users",currentUser.uid), { bookmarks }, { merge:true });
-  loadBlogs();
-};
-
-// --- Like Blog ---
-likeBtn.addEventListener("click", async () => {
-  if(!currentBlogId) return;
-  const blogRef = doc(db,"blogs",currentBlogId);
-  const snap = await getDoc(blogRef);
-  if(!snap.exists()) return;
-  let blog = snap.data();
-  if(!blog.likes.users.includes(currentUser.uid)){
-    blog.likes.count += 1;
-    blog.likes.users.push(currentUser.uid);
-    await updateDoc(blogRef, { likes: blog.likes });
-    viewBlog(currentBlogId);
-  } else {
-    Swal.fire({icon:'info',title:'Already liked!',timer:1000,showConfirmButton:false});
-  }
-});
-
-// --- Edit Blog ---
+// ==================== Edit Blog ====================
 editBlogBtn.addEventListener("click", async () => {
-  editingBlog = true;
-  addEditBlog.style.display = "block";
-  blogDetails.style.display = "none";
-  dashboard.style.display = "none";
-
   const snap = await getDoc(doc(db,"blogs",currentBlogId));
-  if(snap.exists()){
-    const blog = snap.data();
-    blogTitle.value = blog.title;
-    blogText.value = blog.content;
-    blogCategory.value = blog.category;
-  }
+  if(!snap.exists()) return;
+  const blog = snap.data();
+
+  editingBlog = true;
+  addEditBlog.style.display="block";
+  blogDetails.style.display="none";
+
+  blogTitle.value = blog.title;
+  blogText.value = blog.content;
+  blogCategory.value = blog.category;
 });
 
-// --- Delete Blog ---
+// ==================== Delete Blog ====================
 deleteBlogBtn.addEventListener("click", async () => {
   const res = await Swal.fire({
+    title:'Delete this blog?',
     icon:'warning',
-    title:'Are you sure?',
-    text:'This blog will be deleted permanently!',
     showCancelButton:true,
-    confirmButtonText:'Yes, delete it!'
+    confirmButtonText:'Yes',
+    cancelButtonText:'Cancel'
   });
   if(res.isConfirmed){
     await deleteDoc(doc(db,"blogs",currentBlogId));
-    Swal.fire({icon:'success',title:'Deleted!',timer:1000,showConfirmButton:false});
     blogDetails.style.display="none";
     dashboard.style.display="block";
+    Swal.fire({ icon:'success', title:'Blog Deleted', timer:1000, showConfirmButton:false });
     loadBlogs();
   }
 });
-
-// --- Back to Dashboard ---
-backToListBtn.addEventListener("click", () => {
-  blogDetails.style.display="none";
-  dashboard.style.display="block";
-  currentBlogId = null;
-});
-
-// --- Search & Category Filter Live ---
-searchInput.addEventListener("input", loadBlogs);
-categoryFilter.addEventListener("change", loadBlogs);
