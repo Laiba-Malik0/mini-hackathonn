@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BlogMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A modern blogging platform with authentication, categories, likes, and bookmarks">
+  
+  <link rel="stylesheet" href="./css/style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+</head>
+<body>
+
+<!-- ===================== AUTH SECTION ===================== -->
+<div id="auth-section">
+  <div class="auth-container">
+    <h2 id="auth-title">Welcome Back</h2>
+
+    <form id="auth-form">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <input type="text" id="name" placeholder="Full Name" style="display:none;">
+      <button id="auth-btn" type="submit">Login</button>
+    </form>
+
+    <button id="google-login" type="button">Login with Google</button>
+    <p id="auth-toggle">New here? <a href="#" id="toggle-link">Sign Up</a></p>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div id="dashboard" style="display:none;">
+  <header>
+    <h1>BlogMart</h1>
+    <button class="menu-toggle">☰</button>
+    <div class="header-actions">
+      <button id="add-blog" class="btn btn-primary btn-sm">New Blog</button>
+      <button id="my-bookmarks" class="btn btn-warning btn-sm">Bookmarks</button>
+      <button id="logout" class="btn btn-danger btn-sm">Logout</button>
+    </div>
+  </header>
+
+  <div class="search-filter">
+    <input id="search" class="form-control" placeholder="Search blogs...">
+    <select id="category-filter" class="form-select">
+      <option value="">All Categories</option>
+      <option>Technology</option>
+      <option>Health items</option>
+      <option>Food items</option>
+      <option>Traveling</option>
+    </select>
+  </div>
+
+  <div id="blog-list" class="blog-grid"></div>
+</div>
+
+<!-- ===================== BLOG DETAILS ===================== -->
+<div id="blog-details" style="display:none;">
+  <button id="back-to-list" class="btn btn-secondary btn-sm mt-3">← Back</button>
+  <div id="blog-content" class="blog-detail-card my-3"></div>
+  <div class="actions">
+    <button id="like-btn" class="btn btn-danger">Like</button>
+    <button id="bookmark-btn" class="btn btn-warning">Bookmark</button>
+    <button id="edit-blog" class="btn btn-primary" style="display:none;">Edit</button>
+    <button id="delete-blog" class="btn btn-danger" style="display:none;">Delete</button>
+  </div>
+</div>
+
+<!-- ===================== ADD / EDIT BLOG ===================== -->
+<div id="add-edit-blog" style="display:none;">
+  <h2 id="form-title">Create New Blog</h2>
+  <form id="blog-form">
+    <input type="text" id="blog-title" placeholder="Blog Title" required>
+    <textarea id="blog-text" placeholder="Blog Content" required rows="5"></textarea>
+    <input type="file" id="cover-image" accept="image/*">
+    <select id="blog-category" required>
+      <option value="">Select Category</option>
+      <option>Tech</option>
+      <option>Health</option>
+      <option>Food</option>
+      <option>Travel</option>
+    </select>
+    <button type="submit" id="publish">Publish</button>
+  </form>
+  <button id="cancel-blog">Cancel</button>
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  © BlogMart
+</footer>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
